@@ -2,7 +2,12 @@
 
 // === msgpack ===
 // MessagePack -> http://msgpack.sourceforge.net/
-
+var window['msgpack'];
+var onmessage, postMessage, vblen, vbstr, btoa;
+var option = {
+	before: undefined,
+	after: undefined
+};
 this.msgpack || (function(globalScope) {
 
 globalScope.msgpack = {
@@ -35,7 +40,7 @@ var _ie         = /MSIE/.test(navigator.userAgent),
 // for WebWorkers Code Block
 self.importScripts && (onmessage = function(event) {
     if (event.data.method === "pack") {
-        postMessage(base64encode(msgpackpack(event.data.data)));
+        postMessage(base64encode(msgpackpack(event.data.data, undefined)));
     } else {
         postMessage(msgpackunpack(event.data.data));
     }
@@ -444,7 +449,7 @@ function msgpackupload(url,        // @param String:
         worker.postMessage({ method: "pack", data: option.data });
     } else {
         // pack and base64 encode
-        option.data = base64encode(msgpackpack(option.data));
+        option.data = base64encode(msgpackpack(option.data, undefined));
         ajax(url, option, callback);
     }
 }
@@ -484,7 +489,7 @@ function ajax(url,        // @param String:
                             };
                             worker.postMessage({ method: "unpack",
                                                  data: xhr.responseText });
-                            gc();
+                            gc(undefined);
                             return;
                         } else {
                             byteArray = _ie ? toByteArrayIE(xhr)
@@ -495,7 +500,7 @@ function ajax(url,        // @param String:
                 }
                 after && after(xhr, option, rv);
                 callback(data, option, rv);
-                gc();
+                gc(undefined);
             }
         }
     }
@@ -517,12 +522,11 @@ function ajax(url,        // @param String:
         globalScope.addEventListener &&
             globalScope.removeEventListener("beforeunload", ng, false);
     }
-
     var watchdog = 0,
         method = option.method || "GET",
         header = option.header || {},
-        before = option.before,
-        after = option.after,
+        before = (option.hasOwnProperty('before')) ? option.before : undefined,
+        after = (option.hasOwnProperty('after')) ? option.after : undefined,
         data = option.data || null,
         xhr = globalScope.XMLHttpRequest ? new XMLHttpRequest() :
               globalScope.ActiveXObject  ? new ActiveXObject("Microsoft.XMLHTTP") :
